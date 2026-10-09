@@ -59,6 +59,21 @@
           : t.homePronto,
   );
 
+  // Scheda attiva: vale solo per la visita corrente; con un codice dal link si apre "Unisci".
+  const SCHEDE = [{ id: "crea" }, { id: "unisci" }] as const;
+  type IdScheda = (typeof SCHEDE)[number]["id"];
+  let scheda = $state<IdScheda>(untrack(() => (normalizzaCodice(codiceIniziale) !== "" ? "unisci" : "crea")));
+
+  function tastoScheda(e: KeyboardEvent): void {
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight" && e.key !== "Home" && e.key !== "End") return;
+    e.preventDefault();
+    const i = SCHEDE.findIndex((x) => x.id === scheda);
+    const n = SCHEDE.length;
+    const j = e.key === "Home" ? 0 : e.key === "End" ? n - 1 : (i + (e.key === "ArrowRight" ? 1 : -1) + n) % n;
+    scheda = SCHEDE[j].id;
+    document.getElementById(`tab-${scheda}`)?.focus();
+  }
+
   function invia(e: SubmitEvent): void {
     e.preventDefault();
     if (puoUnirsi) onUnisciti({ codice, nome: nome.trim() });
@@ -98,32 +113,52 @@
     </div>
   {/if}
 
-  <section class="blocco scheda" aria-labelledby="titolo-crea">
-    <h2 id="titolo-crea">{t.homeCreaTitolo}</h2>
-    <p class="nota">{t.homeCreaAiuto}</p>
-    <CampoTesto etichetta={t.homeCampoNome} valore={nome} onCambia={cambiaNome} maxLunghezza={20} />
-    <p class="nota">{t.homeNomeAiuto}</p>
-    <Pulsante onClick={() => onCrea(nome.trim())}>{t.homeCreaPartita}</Pulsante>
-  </section>
+  <div class="schede" role="tablist" aria-label={t.homeSchede} aria-orientation="horizontal">
+    {#each SCHEDE as s (s.id)}
+      <button
+        type="button"
+        role="tab"
+        class="tab"
+        id="tab-{s.id}"
+        aria-selected={scheda === s.id}
+        aria-controls="pannello-{s.id}"
+        tabindex={scheda === s.id ? 0 : -1}
+        onclick={() => (scheda = s.id)}
+        onkeydown={tastoScheda}
+      >
+        {s.id === "crea" ? t.homeSchedaCrea : t.homeSchedaUnisci}
+      </button>
+    {/each}
+  </div>
 
-  <form class="blocco scheda" aria-labelledby="titolo-unisciti" onsubmit={invia}>
-    <h2 id="titolo-unisciti">{t.homeUniscitiSezione}</h2>
-    <CampoTesto
-      etichetta={t.homeCampoCodiceBreve}
-      valore={codice}
-      onCambia={(v) => (codice = v)}
-      trasforma={estraiCodice}
-      formatta={formattaCodice}
-      segnaposto={t.homeSegnapostoCodice}
-      tipoCodice
-      invio="go"
-    />
-    <CampoTesto etichetta={t.homeCampoNome} valore={nome} onCambia={cambiaNome} maxLunghezza={20} invio="go" />
-    <p class="nota" role="status">{suggerimento}</p>
-    <Pulsante variante="tonale" disabilitato={!puoUnirsi} onClick={() => onUnisciti({ codice, nome: nome.trim() })}
-      >{t.homeUnisciti}</Pulsante
-    >
-  </form>
+  {#if scheda === "crea"}
+    <div class="blocco pannello" role="tabpanel" id="pannello-crea" aria-labelledby="tab-crea" tabindex="-1">
+      <p class="nota">{t.homeCreaAiuto}</p>
+      <CampoTesto etichetta={t.homeCampoNome} valore={nome} onCambia={cambiaNome} maxLunghezza={20} />
+      <p class="nota">{t.homeNomeAiuto}</p>
+      <Pulsante onClick={() => onCrea(nome.trim())}>{t.homeCreaPartita}</Pulsante>
+    </div>
+  {:else}
+    <div class="pannello" role="tabpanel" id="pannello-unisci" aria-labelledby="tab-unisci" tabindex="-1">
+      <form class="blocco" onsubmit={invia}>
+        <CampoTesto
+          etichetta={t.homeCampoCodiceBreve}
+          valore={codice}
+          onCambia={(v) => (codice = v)}
+          trasforma={estraiCodice}
+          formatta={formattaCodice}
+          segnaposto={t.homeSegnapostoCodice}
+          tipoCodice
+          invio="go"
+        />
+        <CampoTesto etichetta={t.homeCampoNome} valore={nome} onCambia={cambiaNome} maxLunghezza={20} invio="go" />
+        <p class="nota" role="status">{suggerimento}</p>
+        <Pulsante variante="tonale" disabilitato={!puoUnirsi} onClick={() => onUnisciti({ codice, nome: nome.trim() })}
+          >{t.homeUnisciti}</Pulsante
+        >
+      </form>
+    </div>
+  {/if}
 
   <footer class="barra">
     <Pulsante variante="testo" onClick={onRegole}>{t.homeComeSiGioca}</Pulsante>
@@ -168,15 +203,48 @@
     flex-direction: column;
     gap: var(--spazio-2);
   }
-  .scheda {
-    padding: var(--spazio-4);
-    border-radius: var(--raggio-l);
-    border: var(--spessore-contorno) solid var(--colore-bordo-livello);
-    background: var(--colore-contenitore-superficie);
-    color: var(--colore-su-superficie);
+  .schede {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-bottom: 1px solid var(--colore-contorno-variante);
   }
-  h2 {
-    font: var(--testo-titolo-sezione);
+  .tab {
+    position: relative;
+    min-height: 48px;
+    padding: var(--spazio-2) var(--spazio-4);
+    border: 0;
+    background: transparent;
+    color: var(--colore-su-superficie-variante);
+    font: var(--testo-titolo);
+    cursor: pointer;
+  }
+  .tab[aria-selected="true"] {
+    color: var(--colore-primario);
+  }
+  .tab::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 -1px 0;
+    height: 3px;
+    border-radius: var(--raggio-pieno) var(--raggio-pieno) 0 0;
+    background: var(--colore-primario);
+    transform: scaleX(0);
+    transition: transform var(--durata-barra) ease;
+  }
+  .tab[aria-selected="true"]::after {
+    transform: scaleX(1);
+  }
+  .tab:focus-visible {
+    outline: 2px solid var(--colore-primario);
+    outline-offset: -2px;
+  }
+  .pannello:focus {
+    outline: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tab::after {
+      transition: none;
+    }
   }
   .nota {
     font: var(--testo-corpo-piccolo);

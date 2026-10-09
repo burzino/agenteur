@@ -49,3 +49,5 @@ Feedback: lobby e scelta dei ruoli poco fluide. Modificato solo `web/src/ui/` e 
 - Annullamento del timeout di PeerJS lato trasporto e distinzione fra broker giù e host assente (ora lo stesso messaggio di rete).
 - Un ordine di giocatori garantito dall'host (oggi è l'ordine dell'array, stabile ma non dichiarato nel contratto).
 - Condivisione nativa del link (Web Share) e tasto "Pronto" per giocatore sono possibili solo con nuovi messaggi.
+
+- Home a due schede (Crea / Unisci) con barra ARIA tablist, indicatore animato (rispetta reduced-motion) e nome condiviso; scritta, da verificare con build.
