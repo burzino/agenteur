@@ -1,11 +1,10 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import DialogoConferma from "./ui/componenti/DialogoConferma.svelte";
-  import Pagina from "./ui/componenti/Pagina.svelte";
-  import Pulsante from "./ui/componenti/Pulsante.svelte";
   import Toast from "./ui/componenti/Toast.svelte";
   import { carteConColori, normalizzaCodice } from "./ui/logica";
   import { nomeSalvato, partita } from "./ui/partita.svelte";
+  import Collegamento from "./ui/schermate/Collegamento.svelte";
   import ComeSiGioca from "./ui/schermate/ComeSiGioca.svelte";
   import Fine from "./ui/schermate/Fine.svelte";
   import Home from "./ui/schermate/Home.svelte";
@@ -94,17 +93,13 @@
 {#if schermata === "regole"}
   <ComeSiGioca onIndietro={vaiHome} />
 {:else if schermata === "connessione"}
-  <Pagina titolo={t.connessioneTitolo}>
-    <p class="attesa" role="status">{t.connessioneInCorso}</p>
-    {#snippet piede()}
-      <Pulsante variante="contorno" onClick={() => partita.annulla()}>{t.annulla}</Pulsante>
-    {/snippet}
-  </Pagina>
+  <Collegamento intento={partita.intento} codice={partita.ultimoCodice} onAnnulla={() => partita.annulla()} />
 {:else if schermata === "lobby" && v}
   <Lobby
     vista={v}
     eHost={partita.eHost}
     regia={partita.regia}
+    postoInAttesa={partita.postoInAttesa}
     onScegli={(id, squadra, ruolo) => partita.scegli(id, squadra, ruolo)}
     onRegia={(r) => partita.impostaRegia(r)}
     onInizia={() => partita.inizia()}
@@ -147,9 +142,12 @@
       onCrea={(nome) => void partita.crea(nome)}
       onUnisciti={unisciti}
       onRegole={() => (window.location.hash = "#/come-si-gioca")}
-      codiceIniziale={codiceDaLink}
+      codiceIniziale={codiceDaLink || partita.ultimoCodice}
       nomeIniziale={nomeSalvato()}
       avviso={partita.avviso}
+      errore={partita.erroreAvvio}
+      onRiprova={() => partita.ripetiAvvio()}
+      onChiudiErrore={() => partita.cancellaErroreAvvio()}
     />
   {/key}
 {/if}
@@ -171,10 +169,6 @@
 <Toast />
 
 <style>
-  .attesa {
-    font: var(--testo-corpo);
-    color: var(--colore-su-superficie-variante);
-  }
   .banner {
     position: fixed;
     top: 0;

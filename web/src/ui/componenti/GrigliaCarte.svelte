@@ -6,8 +6,10 @@
     carte: CartaGriglia[];
     /** Tocco su una carta non scoperta; senza, la griglia e' di sola lettura. */
     onTocca?: (indice: number) => void;
+    /** Carta scelta in attesa di conferma (evidenziata). */
+    selezionata?: number | null;
   }
-  let { carte, onTocca }: Props = $props();
+  let { carte, onTocca, selezionata = null }: Props = $props();
 
   // Icone (forme, non solo colore): rosso triangolo, blu quadrato, neutrale trattino, assassino croce.
   const ICONE: Record<string, string> = {
@@ -26,6 +28,9 @@
       class="carta {c.stile ?? 'nascosta'}"
       class:scoperta={c.scoperta}
       class:suggerito={c.suggerito}
+      class:scelta={c.indice === selezionata}
+      class:attiva
+      aria-pressed={attiva ? c.indice === selezionata : undefined}
       disabled={!attiva}
       aria-label={c.etichettaAria}
       onclick={() => onTocca?.(c.indice)}
@@ -75,10 +80,25 @@
   .carta:not(:disabled):active {
     transform: scale(0.96);
   }
+  /* Carte su cui si puo' agire: bordo piu' marcato, cosi' si capisce che si toccano. */
+  .carta.attiva {
+    border-color: var(--colore-contorno);
+  }
+  /* Carta scelta, in attesa di conferma: anello e leggero ingrandimento. */
+  .carta.scelta {
+    z-index: 1;
+    border-color: var(--colore-primario);
+    outline: 4px solid var(--colore-primario);
+    outline-offset: -1px;
+    transform: scale(1.06);
+  }
+  .carta.scelta .parola {
+    font-weight: 800;
+  }
   .parola {
     max-width: 100%;
     font: var(--testo-didascalia);
-    font-size: clamp(0.56rem, 2.9vw, 0.8rem);
+    font-size: clamp(0.6rem, 3.1vw, 0.85rem);
     line-height: 1.1;
     text-align: center;
     overflow-wrap: anywhere;

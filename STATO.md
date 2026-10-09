@@ -12,6 +12,8 @@
 3b. [fatto] Lobby, collegamento, partita completa, fine partita, tema
 3. [fatto e verificato, secondo giro: vitest 71/71, svelte-check 0 errori e 0 avvisi, build verde] Interfaccia completa. Il CA-01 ora richiede almeno 400 parole (la lista ne ha 465). Correzione degli avvisi di Home con `untrack`.
 4. [da fare] Collaudo su due telefoni (uno host, uno guest) e in Chrome con due finestre.
+6. [scritta, da verificare con build] Revisione UX/UI (docs/ux-revisione.md)
+5. [fatto] Deploy: repository pubblico `burzino/agenteur` (main), Pages con sorgente GitHub Actions, workflow verde. Sito: http://burzi.eu/agenteur/ (200). Carta "Agenteur" su burzi.eu (commit c99eb50 in burzino.github.io). Da fare: attivare "Enforce HTTPS" nelle impostazioni Pages (il certificato per burzi.eu è approvato, scade 2027-01-07).
 
 ## Punti aperti
 - Icone: per ora copiate da Imposteur; servono icone proprie.

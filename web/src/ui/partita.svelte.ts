@@ -43,6 +43,11 @@ const MAX_TENTATIVI = 8;
 
 export type Collegamento = "inattivo" | "connessione" | "attivo";
 export type Modalita = "nessuna" | "host" | "guest";
+/** Cosa sta facendo il telefono mentre `collegamento` e' "connessione" (per i testi di attesa). */
+export type Intento = "crea" | "unisciti" | "riprendi";
+
+/** Dopo quanto un posto scelto da un guest e non confermato torna a quello reale. */
+const ATTESA_POSTO_MS = 5000;
 
 function leggiLocale(chiave: string): string | null {
   try {
@@ -92,7 +97,17 @@ class Partita {
   errore = $state<string | undefined>(undefined);
   /** Guest: collegamento perso, si sta riprovando con il token (D8). */
   riprovo = $state(false);
+  /** Stato di UI: cosa si sta tentando (crea, unisciti, riprendi). */
+  intento = $state<Intento>("crea");
+  /** Stato di UI: errore di creazione o ingresso, da mostrare in Home con "Riprova". */
+  erroreAvvio = $state<string | null>(null);
+  /** Stato di UI: ultimo codice digitato per entrare (si ripropone dopo un errore). */
+  ultimoCodice = $state("");
+  /** Stato di UI: guest, posto scelto e non ancora confermato dall'host (es. "blu-spia"). */
+  postoInAttesa = $state<string | null>(null);
 
+  #ultimo: { tipo: "crea" | "unisciti"; nome: string; codice: string } | null = null;
+  #timerPosto: ReturnType<typeof setTimeout> | null = null;
   #stanza: Stanza | null = null;
   #trasporto: Trasporto | null = null;
   #generazione = 0;
@@ -129,6 +144,7 @@ class Partita {
     this.#nome = nomeSalvato() || t.nomePredefinitoGiocatore;
     this.#codice = s.codice;
     this.collegamento = "connessione";
+    this.intento = "riprendi";
     this.riprovo = true; // riconnessione: un fallimento di rete si riprova, host assente chiude
     void this.#collega();
   }
@@ -138,6 +154,9 @@ class Partita {
   async crea(nome: string): Promise<void> {
     if (this.collegamento !== "inattivo") return;
     this.avviso = null;
+    this.erroreAvvio = null;
+    this.intento = "crea";
+    this.#ultimo = { tipo: "crea", nome, codice: "" };
     this.collegamento = "connessione";
     this.#nome = nome || t.nomePredefinitoHost;
     if (nome) scriviLocale(CHIAVE_NOME, nome);
@@ -147,15 +166,29 @@ class Partita {
       const codice = generaChiavePartita(casualeDefault);
       this.#stanza = creaStanza(codice);
       try {
-        const tr = await apriStanza(
+        const promessa = apriStanza(
           codice,
           (conn, grezzo) => this.#daGuest(conn, grezzo),
           (conn) => this.#applica(connessioneCaduta(this.#stanzaOk(), conn)),
         );
-        if (gen !== this.#generazione) {
-          tr.chiudi();
-          return;
+        // Una risoluzione tardiva (dopo timeout o annullamento) chiude il peer, non lo lascia aperto.
+        promessa.then(
+          (tr) => {
+            if (gen !== this.#generazione) tr.chiudi();
+          },
+          () => undefined,
+        );
+        let scaduto: ReturnType<typeof setTimeout> | undefined;
+        const limite = new Promise<never>((_, rifiuta) => {
+          scaduto = setTimeout(() => rifiuta({ type: "timeout" }), TIMEOUT_COLLEGAMENTO_MS);
+        });
+        let tr: Trasporto;
+        try {
+          tr = await Promise.race([promessa, limite]);
+        } finally {
+          clearTimeout(scaduto);
         }
+        if (gen !== this.#generazione) return;
         this.#trasporto = tr;
         this.modalita = "host";
         scriviLocale(CHIAVE_HOST_ATTIVO, codice);
@@ -166,12 +199,25 @@ class Partita {
         if (gen !== this.#generazione) return;
         if (tipoErrore(e) === "unavailable-id") continue; // codice gia' in uso: se ne estrae un altro
         this.#azzera();
-        mostraToast(t.erroreBroker);
+        this.erroreAvvio = tipoErrore(e) === "timeout" ? t.erroreTimeout : t.erroreBroker;
         return;
       }
     }
     this.#azzera();
-    mostraToast(t.erroreCodiceOccupato);
+    this.erroreAvvio = t.erroreCodiceOccupato;
+  }
+
+  /** Ripete l'ultima creazione o l'ultimo ingresso fallito (pulsante "Riprova" della Home). */
+  ripetiAvvio(): void {
+    const u = this.#ultimo;
+    this.erroreAvvio = null;
+    if (!u || this.collegamento !== "inattivo") return;
+    if (u.tipo === "crea") void this.crea(u.nome);
+    else void this.unisciti(u.codice, u.nome);
+  }
+
+  cancellaErroreAvvio(): void {
+    this.erroreAvvio = null;
   }
 
   #stanzaOk(): Stanza {
@@ -204,7 +250,14 @@ class Partita {
     this.vista = vistaDi(st, io ?? REGIA);
   }
 
+  #chiudiAttesaPosto(): void {
+    if (this.#timerPosto !== null) clearTimeout(this.#timerPosto);
+    this.#timerPosto = null;
+    this.postoInAttesa = null;
+  }
+
   #segnalaErrore(messaggio: string): void {
+    this.#chiudiAttesaPosto(); // un rifiuto riporta la scelta al posto reale
     this.errore = messaggio;
     mostraToast(messaggio);
   }
@@ -236,6 +289,10 @@ class Partita {
   async unisciti(codice: string, nome: string): Promise<void> {
     if (this.collegamento !== "inattivo") return;
     this.avviso = null;
+    this.erroreAvvio = null;
+    this.intento = "unisciti";
+    this.ultimoCodice = codice;
+    this.#ultimo = { tipo: "unisciti", nome, codice };
     this.#nome = nome;
     scriviLocale(CHIAVE_NOME, nome);
     this.#codice = codice;
@@ -297,7 +354,7 @@ class Partita {
       const eraRiconnessione = this.riprovo || this.vista !== null;
       this.#azzera();
       if (eraRiconnessione) this.avviso = t.avvisoHostIrraggiungibile;
-      else mostraToast(t.erroreStanzaNonTrovata);
+      else this.erroreAvvio = t.erroreStanzaNonTrovata;
       return;
     }
     if (this.riprovo || this.vista !== null) {
@@ -305,7 +362,7 @@ class Partita {
       return;
     }
     this.#azzera();
-    mostraToast(t.erroreBroker);
+    this.erroreAvvio = tipo === "timeout" ? t.erroreTimeout : t.erroreBroker;
   }
 
   #cadutaHost(gen: number): void {
@@ -347,6 +404,15 @@ class Partita {
         break;
       case "stato":
         this.vista = m.vista;
+        // La scelta in attesa e' confermata quando la vista ricevuta la contiene.
+        if (
+          this.postoInAttesa !== null &&
+          m.vista.io.squadra !== null &&
+          m.vista.io.ruolo !== null &&
+          this.postoInAttesa === `${m.vista.io.squadra}-${m.vista.io.ruolo}`
+        ) {
+          this.#chiudiAttesaPosto();
+        }
         this.collegamento = "attivo";
         this.modalita = "guest";
         this.riprovo = false;
@@ -398,6 +464,12 @@ class Partita {
       if ("errore" in r) this.#segnalaErrore(r.errore);
       else this.#applica(r);
     } else if (this.vista && idGiocatore === this.vista.io.id) {
+      const chiave = `${squadra}-${ruolo}`;
+      const { squadra: s, ruolo: r } = this.vista.io;
+      if (s === squadra && r === ruolo) return; // gia' il suo posto: niente messaggio inutile
+      this.postoInAttesa = chiave; // risposta immediata: il posto appare "in attesa" finche' l'host conferma
+      if (this.#timerPosto !== null) clearTimeout(this.#timerPosto);
+      this.#timerPosto = setTimeout(() => this.#chiudiAttesaPosto(), ATTESA_POSTO_MS);
       this.#azione({ tipo: "scegli", squadra, ruolo });
     }
   }
@@ -406,6 +478,7 @@ class Partita {
 
   /** Esce dalla partita. L'host la chiude per tutti. */
   esci(): void {
+    this.ultimoCodice = "";
     if (this.eHost && this.#stanza) {
       for (const u of chiudiStanza(this.#stanza)) {
         try {
@@ -438,6 +511,7 @@ class Partita {
       if (ritardoChiusuraMs > 0) setTimeout(() => tr.chiudi(), ritardoChiusuraMs);
       else tr.chiudi();
     }
+    this.#chiudiAttesaPosto();
     this.#stanza = null;
     this.#inTentativo = false;
     this.#tentativi = 0;

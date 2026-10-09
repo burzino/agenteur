@@ -1,10 +1,9 @@
 <script lang="ts">
   import type { Indizio, Squadra, VistaCarta } from "../../gioco/modelli";
-  import DialogoConferma from "../componenti/DialogoConferma.svelte";
   import GrigliaCarte from "../componenti/GrigliaCarte.svelte";
   import Pagina from "../componenti/Pagina.svelte";
   import Pulsante from "../componenti/Pulsante.svelte";
-  import { costruisciGriglia, nomeSquadra } from "../logica";
+  import { costruisciGriglia, istruzioneTurno, nomeSquadra } from "../logica";
   import { riempi, t } from "../testi";
 
   interface Props {
@@ -40,18 +39,31 @@
   }: Props = $props();
 
   const griglia = $derived(costruisciGriglia(carte, ePiaSpia));
-  let daConfermare = $state<number | null>(null);
-  const cartaScelta = $derived(daConfermare === null ? undefined : carte[daConfermare]);
+  /** Carta scelta e in attesa della conferma leggera (barra in basso, niente finestra). */
+  let scelta = $state<number | null>(null);
+  const cartaScelta = $derived(scelta === null ? undefined : carte[scelta]);
+
+  // La scelta decade se non si puo' piu' agire o se la carta e' stata scoperta nel frattempo.
+  $effect(() => {
+    if (scelta !== null && (!puoAgire || carte[scelta]?.scoperta !== false)) scelta = null;
+  });
 
   const ruolo = $derived(
     squadraGiocatore === null
       ? null
       : riempi(ePiaSpia ? t.planciaSeiSpia : t.planciaSeiAgente, { squadra: nomeSquadra(squadraGiocatore) }),
   );
+  const istruzione = $derived(
+    istruzioneTurno({ squadraDiTurno, haIndizio: indizio !== null, puoAgire, ePiaSpia, squadraGiocatore }),
+  );
+
+  function tocca(i: number): void {
+    scelta = scelta === i ? null : i;
+  }
 
   function conferma(): void {
-    const i = daConfermare;
-    daConfermare = null;
+    const i = scelta;
+    scelta = null;
     if (i !== null) onScopri(i);
   }
 </script>
@@ -60,56 +72,59 @@
   {#snippet testata()}
     <div class="info">
       <p class="turno {squadraDiTurno}">{riempi(t.planciaTurno, { squadra: nomeSquadra(squadraDiTurno) })}</p>
-      <p class="indizio">
-        {#if indizio}
-          <span class="etichetta">{t.planciaIndizio}</span>
-          {riempi(t.planciaIndizioNumero, { parola: indizio.parola, numero: indizio.numero })}
-        {:else}
-          {t.planciaNessunIndizio}
-        {/if}
-      </p>
-      <p class="rimaste">
-        <span class="conta rosso" title={t.planciaRimasteRosse} aria-label="{t.planciaRimasteRosse}: {rimaste.rosso}"
-          >{rimaste.rosso}</span
-        >
-        <span class="conta blu" title={t.planciaRimasteBlu} aria-label="{t.planciaRimasteBlu}: {rimaste.blu}"
-          >{rimaste.blu}</span
-        >
-      </p>
+      <ul class="rimaste" aria-label={t.planciaCarteRimaste}>
+        <li class="conta rosso">
+          <span class="num">{rimaste.rosso}</span>
+          <span class="et">{t.planciaRosse}</span>
+        </li>
+        <li class="conta blu">
+          <span class="num">{rimaste.blu}</span>
+          <span class="et">{t.planciaBlu}</span>
+        </li>
+      </ul>
     </div>
-    {#if ruolo}<p class="ruolo">{ruolo}</p>{/if}
+    <p class="istruzione" class:tocca-a-te={puoAgire} role="status">{istruzione}</p>
+    <p class="indizio">
+      {#if indizio}
+        <span class="etichetta">{t.planciaIndizio}</span>
+        {riempi(t.planciaIndizioNumero, { parola: indizio.parola, numero: indizio.numero })}
+      {:else}
+        <span class="etichetta">{t.planciaNessunIndizio}</span>
+      {/if}
+    </p>
   {/snippet}
 
-  <GrigliaCarte carte={griglia} onTocca={puoAgire ? (i) => (daConfermare = i) : undefined} />
+  <GrigliaCarte carte={griglia} onTocca={puoAgire ? tocca : undefined} selezionata={scelta} />
 
   {#snippet piede()}
-    {#if puoAgire}
-      <Pulsante onClick={onTermina} disabilitato={scopertiNelTurno === 0}>{t.planciaTerminaTurno}</Pulsante>
+    {#if puoAgire && scelta !== null && cartaScelta}
+      <div class="azioni conferma">
+        <Pulsante onClick={conferma}>{riempi(t.planciaConferma, { parola: cartaScelta.parola })}</Pulsante>
+        <Pulsante variante="contorno" onClick={() => (scelta = null)}>{t.annulla}</Pulsante>
+      </div>
+    {:else if puoAgire}
+      <div class="azioni">
+        <p class="nota">{scopertiNelTurno === 0 ? t.planciaTerminaSpiega : t.planciaScegliCarta}</p>
+        <Pulsante variante="tonale" onClick={onTermina} disabilitato={scopertiNelTurno === 0}
+          >{t.planciaTerminaTurno}</Pulsante
+        >
+      </div>
+    {:else if ruolo}
+      <p class="nota centro">{ruolo}</p>
     {/if}
   {/snippet}
 </Pagina>
 
-<DialogoConferma
-  aperto={daConfermare !== null}
-  titolo={riempi(t.scopriTitolo, { parola: cartaScelta?.parola ?? "" })}
-  messaggio={t.scopriMessaggio}
-  etichettaSi={t.scopriConferma}
-  etichettaNo={t.scopriAnnulla}
-  onSi={conferma}
-  onNo={() => (daConfermare = null)}
-/>
-
 <style>
   .info {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: var(--spazio-1) var(--spazio-3);
+    gap: var(--spazio-3);
   }
   .turno {
-    font: var(--testo-etichetta);
-    padding: var(--spazio-1) var(--spazio-3);
+    font: var(--testo-titolo);
+    padding: var(--spazio-2) var(--spazio-4);
     border-radius: var(--raggio-pieno);
     color: var(--colore-su-avatar);
   }
@@ -119,27 +134,21 @@
   .turno.blu {
     background: var(--colore-avatar-4);
   }
-  .indizio {
-    flex: 1;
-    min-width: 0;
-    font: var(--testo-titolo);
-    overflow-wrap: anywhere;
-  }
-  .etichetta {
-    font: var(--testo-didascalia);
-    color: var(--colore-su-superficie-variante);
-    margin-right: var(--spazio-1);
-  }
+  /* Contatori sempre visibili: numero grande + nome della squadra (non solo il colore). */
   .rimaste {
     display: flex;
     gap: var(--spazio-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
   .conta {
-    min-width: 32px;
-    padding: 2px var(--spazio-2);
-    border-radius: var(--raggio-pieno);
-    font: var(--testo-etichetta);
-    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 52px;
+    padding: 2px var(--spazio-3);
+    border-radius: var(--raggio-m);
     color: var(--colore-su-avatar);
   }
   .conta.rosso {
@@ -148,9 +157,40 @@
   .conta.blu {
     background: var(--colore-avatar-4);
   }
-  .ruolo {
+  .num {
+    font: var(--testo-titolo-sezione);
+  }
+  .et {
+    font: var(--testo-didascalia);
+  }
+  .istruzione {
+    margin-top: var(--spazio-2);
+    font: var(--testo-titolo);
+  }
+  .istruzione.tocca-a-te {
+    padding: var(--spazio-2) var(--spazio-3);
+    border-radius: var(--raggio-m);
+    background: var(--colore-contenitore-primario);
+    color: var(--colore-su-contenitore-primario);
+  }
+  .indizio {
     margin-top: var(--spazio-1);
+    font: var(--testo-titolo-sezione);
+    overflow-wrap: anywhere;
+  }
+  .etichetta {
     font: var(--testo-corpo-piccolo);
     color: var(--colore-su-superficie-variante);
+    margin-right: var(--spazio-1);
+  }
+  .azioni {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spazio-2);
+  }
+  .nota {
+    font: var(--testo-corpo-piccolo);
+    color: var(--colore-su-superficie-variante);
+    text-align: center;
   }
 </style>

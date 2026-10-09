@@ -8,6 +8,14 @@
     errore?: string;
     multilinea?: boolean;
     righe?: number;
+    /** Campo per un codice: tastiera maiuscola, niente autocorrezione, testo ben spaziato. */
+    tipoCodice?: boolean;
+    /** Ripulisce il testo digitato o incollato prima di salvarlo (es. estrae il codice da un link). */
+    trasforma?: (v: string) => string;
+    /** Come mostrare il valore salvato (es. "ABC · DEF"). */
+    formatta?: (v: string) => string;
+    /** Tasto di invio della tastiera (es. "go"). */
+    invio?: "go" | "next" | "done";
   }
   let {
     valore,
@@ -18,9 +26,31 @@
     errore,
     multilinea = false,
     righe = 3,
+    tipoCodice = false,
+    trasforma,
+    formatta,
+    invio,
   }: Props = $props();
 
   const id = $props.id();
+  const mostrato = $derived(formatta ? formatta(valore) : valore);
+
+  /** Attributi che Svelte non tipizza in modo uniforme: si impostano sul nodo. */
+  function attributi(nodo: HTMLInputElement, codice: boolean) {
+    if (codice) {
+      nodo.setAttribute("autocapitalize", "characters");
+      nodo.setAttribute("autocorrect", "off");
+      nodo.setAttribute("spellcheck", "false");
+    }
+  }
+
+  function alDigitare(e: Event & { currentTarget: HTMLInputElement }): void {
+    const grezzo = e.currentTarget.value;
+    const pulito = trasforma ? trasforma(grezzo) : grezzo;
+    // Riscrive il nodo: se il valore salvato non cambia (es. settimo carattere) Svelte non lo aggiornerebbe.
+    e.currentTarget.value = formatta ? formatta(pulito) : pulito;
+    onCambia(pulito);
+  }
 </script>
 
 <div class="campo" class:con-errore={!!errore}>
@@ -39,14 +69,17 @@
   {:else}
     <input
       id="{id}-c"
+      class:codice={tipoCodice}
       type="text"
-      value={valore}
+      value={mostrato}
       placeholder={segnaposto}
       maxlength={maxLunghezza}
       autocomplete="off"
+      enterkeyhint={invio}
+      use:attributi={tipoCodice}
       aria-invalid={errore ? "true" : undefined}
       aria-describedby={errore ? `${id}-e` : undefined}
-      oninput={(e) => onCambia(e.currentTarget.value)}
+      oninput={alDigitare}
     />
   {/if}
   {#if errore}
@@ -78,6 +111,18 @@
     font-size: max(16px, 1rem); /* niente zoom automatico su iOS */
     line-height: 1.4;
     transition: border-color var(--molla-effetti);
+  }
+  input.codice {
+    min-height: var(--altezza-pulsante);
+    font: var(--testo-nome-grande);
+    font-size: max(20px, 1.75rem);
+    letter-spacing: 0.12em;
+    text-align: center;
+    text-transform: uppercase;
+  }
+  input.codice::placeholder {
+    letter-spacing: 0.12em;
+    color: var(--colore-su-superficie-variante);
   }
   textarea {
     resize: vertical;

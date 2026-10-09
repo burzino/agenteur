@@ -4,20 +4,27 @@
   interface Props {
     variante?: "pieno" | "tonale" | "contorno" | "testo";
     disabilitato?: boolean;
+    /** Operazione in corso: mostra un indicatore e blocca altri tocchi, mantenendo l'aspetto attivo. */
+    inCorso?: boolean;
     onClick: () => void;
     children: Snippet;
     ariaLabel?: string;
   }
-  let { variante = "pieno", disabilitato = false, onClick, children, ariaLabel }: Props = $props();
+  let { variante = "pieno", disabilitato = false, inCorso = false, onClick, children, ariaLabel }: Props = $props();
 </script>
 
 <button
   type="button"
   class="pulsante {variante}"
+  class:in-corso={inCorso}
   disabled={disabilitato}
   aria-label={ariaLabel}
-  onclick={() => onClick()}
+  aria-busy={inCorso ? "true" : undefined}
+  onclick={() => {
+    if (!inCorso) onClick();
+  }}
 >
+  {#if inCorso}<span class="giro" aria-hidden="true"></span>{/if}
   {@render children()}
 </button>
 
@@ -79,6 +86,9 @@
     transform: scale(0.97);
     filter: brightness(0.92);
   }
+  .pulsante.in-corso {
+    cursor: progress;
+  }
   .pulsante:disabled {
     cursor: not-allowed;
     background: color-mix(in srgb, var(--colore-su-superficie) 12%, transparent);
@@ -91,5 +101,25 @@
   }
   .testo:disabled {
     background: transparent;
+  }
+  /* Indicatore di attesa: anello che gira; con movimento ridotto resta fermo (un anello aperto). */
+  .giro {
+    flex: none;
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 3px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: gira 800ms linear infinite;
+  }
+  @keyframes gira {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .giro {
+      animation: none;
+    }
   }
 </style>
