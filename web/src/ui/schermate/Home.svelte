@@ -3,15 +3,14 @@
   import CampoTesto from "../componenti/CampoTesto.svelte";
   import Pulsante from "../componenti/Pulsante.svelte";
   import { LUNGHEZZA_CODICE, codiceCompleto, estraiCodice, formattaCodice, normalizzaCodice } from "../logica";
-  import Selettore from "../componenti/Selettore.svelte";
   import { riempi, t } from "../testi";
-  import { applicaTema, leggiTema, salvaTema, TEMI, type Tema } from "../tema";
 
   interface Props {
     /** Crea una partita come host; `nome` puo' essere vuoto (il chiamante sceglie un nome predefinito). */
     onCrea: (nome: string) => void;
     onUnisciti: (dati: { codice: string; nome: string }) => void;
     onRegole: () => void;
+    onImpostazioni: () => void;
     /** Codice precompilato (es. da un link `#/unisciti/<CODICE>`). */
     codiceIniziale?: string;
     nomeIniziale?: string;
@@ -26,6 +25,7 @@
     onCrea,
     onUnisciti,
     onRegole,
+    onImpostazioni,
     codiceIniziale = "",
     nomeIniziale = "",
     avviso = null,
@@ -37,22 +37,14 @@
   let codice = $state(untrack(() => normalizzaCodice(codiceIniziale)));
   let nome = $state(untrack(() => nomeIniziale));
 
-  // CA-35: tema Sistema / Chiaro / Scuro / Alto contrasto, salvato in `agenteur.aspetto`.
-  let tema = $state<Tema>(leggiTema());
-  const ETICHETTE_TEMA: Record<Tema, string> = {
-    SISTEMA: t.temaSistema,
-    CHIARO: t.temaChiaro,
-    SCURO: t.temaScuro,
-    ALTO_CONTRASTO: t.temaAltoContrasto,
-  };
-  const opzioniTema = TEMI.map((x) => ({ valore: x, etichetta: ETICHETTE_TEMA[x] }));
-
-  function cambiaTema(v: string): void {
-    const nuovo = TEMI.find((x) => x === v);
-    if (!nuovo) return;
-    tema = nuovo;
-    salvaTema(nuovo);
-    applicaTema(nuovo);
+  // Il nome e' uno solo per le due sezioni e si ricorda: non va riscritto.
+  function cambiaNome(v: string): void {
+    nome = v;
+    try {
+      localStorage.setItem("agenteur.nome", v.trim());
+    } catch {
+      /* storage non disponibile: il nome vale solo qui */
+    }
   }
 
   // CA-30: sotto i 6 caratteri "Unisciti" resta disattivato; serve anche un nome.
@@ -74,6 +66,18 @@
 </script>
 
 <main class="home">
+  <div class="alto">
+    <Pulsante variante="testo" onClick={onImpostazioni}>
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+        <path
+          fill="currentColor"
+          d="M19.14 12.94a7.1 7.1 0 0 0 .05-.94 7.1 7.1 0 0 0-.05-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.61-.22l-2.39.96a7 7 0 0 0-1.62-.94l-.36-2.54A.5.5 0 0 0 13.9 2h-3.84a.5.5 0 0 0-.5.42l-.36 2.54a7 7 0 0 0-1.62.94l-2.39-.96a.5.5 0 0 0-.61.22L2.66 8.48a.5.5 0 0 0 .12.64l2.03 1.58a7.1 7.1 0 0 0-.05.94c0 .32.02.63.05.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.13.22.39.31.61.22l2.39-.96c.5.38 1.04.7 1.62.94l.36 2.54c.04.24.25.42.5.42h3.84c.25 0 .46-.18.5-.42l.36-2.54a7 7 0 0 0 1.62-.94l2.39.96c.23.09.48 0 .61-.22l1.92-3.32a.5.5 0 0 0-.12-.64zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7"
+        />
+      </svg>
+      {t.homeImpostazioni}
+    </Pulsante>
+  </div>
+
   <header class="intestazione">
     <h1>{t.homeTitolo}</h1>
     <p>{t.homeSottotitolo}</p>
@@ -94,20 +98,18 @@
     </div>
   {/if}
 
-  <section class="blocco">
-    <CampoTesto etichetta={t.homeCampoNome} valore={nome} onCambia={(v) => (nome = v)} maxLunghezza={20} />
-    <p class="nota">{t.homeNomeAiuto}</p>
-  </section>
-
-  <section class="blocco">
-    <Pulsante onClick={() => onCrea(nome.trim())}>{t.homeCreaPartita}</Pulsante>
+  <section class="blocco scheda" aria-labelledby="titolo-crea">
+    <h2 id="titolo-crea">{t.homeCreaTitolo}</h2>
     <p class="nota">{t.homeCreaAiuto}</p>
+    <CampoTesto etichetta={t.homeCampoNome} valore={nome} onCambia={cambiaNome} maxLunghezza={20} />
+    <p class="nota">{t.homeNomeAiuto}</p>
+    <Pulsante onClick={() => onCrea(nome.trim())}>{t.homeCreaPartita}</Pulsante>
   </section>
 
-  <form class="blocco" onsubmit={invia}>
-    <h2>{t.homeUniscitiTitolo}</h2>
+  <form class="blocco scheda" aria-labelledby="titolo-unisciti" onsubmit={invia}>
+    <h2 id="titolo-unisciti">{t.homeUniscitiSezione}</h2>
     <CampoTesto
-      etichetta={t.homeCampoCodice}
+      etichetta={t.homeCampoCodiceBreve}
       valore={codice}
       onCambia={(v) => (codice = v)}
       trasforma={estraiCodice}
@@ -116,6 +118,7 @@
       tipoCodice
       invio="go"
     />
+    <CampoTesto etichetta={t.homeCampoNome} valore={nome} onCambia={cambiaNome} maxLunghezza={20} invio="go" />
     <p class="nota" role="status">{suggerimento}</p>
     <Pulsante variante="tonale" disabilitato={!puoUnirsi} onClick={() => onUnisciti({ codice, nome: nome.trim() })}
       >{t.homeUnisciti}</Pulsante
@@ -123,7 +126,6 @@
   </form>
 
   <footer class="barra">
-    <Selettore etichetta={t.homeTemaEtichetta} opzioni={opzioniTema} valore={tema} onCambia={cambiaTema} colonne={2} />
     <Pulsante variante="testo" onClick={onRegole}>{t.homeComeSiGioca}</Pulsante>
   </footer>
 </main>
@@ -154,10 +156,24 @@
     font: var(--testo-corpo);
     color: var(--colore-su-superficie-variante);
   }
+  .alto {
+    display: flex;
+    justify-content: flex-end;
+  }
+  .alto :global(.pulsante) {
+    gap: var(--spazio-1);
+  }
   .blocco {
     display: flex;
     flex-direction: column;
     gap: var(--spazio-2);
+  }
+  .scheda {
+    padding: var(--spazio-4);
+    border-radius: var(--raggio-l);
+    border: var(--spessore-contorno) solid var(--colore-bordo-livello);
+    background: var(--colore-contenitore-superficie);
+    color: var(--colore-su-superficie);
   }
   h2 {
     font: var(--testo-titolo-sezione);

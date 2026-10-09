@@ -28,6 +28,24 @@
       .filter((g) => g.squadra === squadra && g.ruolo === ruolo)
       .map((g) => (g.id === ioId ? t.lobbyPostoTuo : g.nome));
   }
+
+  /** Nome di chi occupa il posto da Spia (un altro giocatore, non il bersaglio); "" se non e' bloccato. */
+  function spiaDi(squadra: Squadra, ruolo: Ruolo): string {
+    if (ruolo !== "spia") return "";
+    const g = giocatori.find((x) => x.id !== bersaglioId && x.squadra === squadra && x.ruolo === "spia");
+    return g ? g.nome : "";
+  }
+
+  // Tocco su un posto bloccato: nessuna scelta, solo un testo breve.
+  let messaggio = $state("");
+  function tocca(squadra: Squadra, ruolo: Ruolo, preso: string): void {
+    if (preso) {
+      messaggio = riempi(t.postoGiaPreso, { nome: preso });
+      return;
+    }
+    messaggio = "";
+    onScegli(squadra, ruolo);
+  }
 </script>
 
 <div class="posti" role="group" aria-label={riempi(t.lobbyPostoDi, { nome: bersaglio?.nome ?? "" })}>
@@ -36,24 +54,43 @@
     {@const mio = bersaglio?.squadra === p.squadra && bersaglio?.ruolo === p.ruolo}
     {@const attesa = !mio && inAttesa === chiave}
     {@const nomi = occupanti(p.squadra, p.ruolo)}
+    {@const preso = mio ? "" : spiaDi(p.squadra, p.ruolo)}
     <button
       type="button"
       class="posto {p.squadra}"
       class:mio
       class:attesa
+      class:preso={!!preso}
       aria-pressed={mio || attesa}
-      onclick={() => onScegli(p.squadra, p.ruolo)}
+      aria-disabled={preso ? "true" : undefined}
+      onclick={() => tocca(p.squadra, p.ruolo, preso)}
     >
       <span class="titolo">
+        {#if p.ruolo === "spia"}
+          <!-- occhio -->
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+            <path
+              fill="currentColor"
+              d="M12 5C7 5 2.7 8.1 1 12.5 2.7 16.9 7 20 12 20s9.3-3.1 11-7.5C21.3 8.1 17 5 12 5m0 12.5a5 5 0 1 1 0-10 5 5 0 0 1 0 10m0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6"
+            />
+          </svg>
+        {:else}
+          <!-- persona -->
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+            <path fill="currentColor" d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9m0 2.25c-3 0-9 1.5-9 4.5V21h18v-2.25c0-3-6-4.5-9-4.5" />
+          </svg>
+        {/if}
+        {nomeSquadra(p.squadra)} · {nomeRuolo(p.ruolo)}
         {#if mio}
           <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
             <path fill="currentColor" d="m9.55 17.65-4.4-4.4 1.4-1.4 3 3 7.9-7.9 1.4 1.4z" />
           </svg>
         {/if}
-        {nomeSquadra(p.squadra)} · {nomeRuolo(p.ruolo)}
       </span>
       <span class="chi">
-        {#if attesa}
+        {#if preso}
+          {riempi(t.postoOccupatoDa, { nome: preso })}
+        {:else if attesa}
           {t.lobbyPostoInAttesa}
         {:else if nomi.length === 0}
           {t.lobbyPostoLibero}
@@ -64,6 +101,7 @@
     </button>
   {/each}
 </div>
+<p class="messaggio" role="status">{messaggio}</p>
 
 <style>
   .posti {
@@ -119,6 +157,20 @@
   }
   .posto.attesa.blu {
     background: color-mix(in srgb, var(--colore-avatar-4) 22%, var(--colore-contenitore-superficie-alto));
+  }
+  /* Spia gia' occupata: spento e non selezionabile, ma il nome di chi la occupa resta leggibile. */
+  .posto.preso {
+    opacity: 0.6;
+    border-style: dotted;
+    cursor: not-allowed;
+  }
+  .posto.preso:active {
+    transform: none;
+  }
+  .messaggio {
+    min-height: 1.5em;
+    font: var(--testo-corpo-piccolo);
+    color: var(--colore-su-superficie-variante);
   }
   .titolo {
     display: inline-flex;

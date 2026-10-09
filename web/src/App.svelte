@@ -8,12 +8,13 @@
   import ComeSiGioca from "./ui/schermate/ComeSiGioca.svelte";
   import Fine from "./ui/schermate/Fine.svelte";
   import Home from "./ui/schermate/Home.svelte";
+  import Impostazioni from "./ui/schermate/Impostazioni.svelte";
   import Indizio from "./ui/schermate/Indizio.svelte";
   import Lobby from "./ui/schermate/Lobby.svelte";
   import Plancia from "./ui/schermate/Plancia.svelte";
   import { t } from "./ui/testi";
 
-  type Schermata = "home" | "regole" | "connessione" | "lobby" | "indizio" | "plancia" | "fine";
+  type Schermata = "home" | "regole" | "impostazioni" | "connessione" | "lobby" | "indizio" | "plancia" | "fine";
 
   const PREFISSO_UNISCITI = "#/unisciti/";
 
@@ -28,6 +29,7 @@
   // La schermata dipende dallo stato di rete; la rotta in hash la segue (e non il contrario).
   const schermata = $derived.by<Schermata>(() => {
     if (hash === "#/come-si-gioca") return "regole";
+    if (hash === "#/impostazioni") return "impostazioni";
     if (partita.collegamento === "connessione") return "connessione";
     const v = partita.vista;
     if (!v) return "home";
@@ -41,6 +43,7 @@
   const HASH_DI: Record<Schermata, string | null> = {
     home: null, // resta quello che c'e' (#/ oppure #/unisciti/<CODICE>)
     regole: null,
+    impostazioni: null,
     connessione: null,
     lobby: "#/lobby",
     indizio: "#/plancia",
@@ -92,6 +95,8 @@
 
 {#if schermata === "regole"}
   <ComeSiGioca onIndietro={vaiHome} />
+{:else if schermata === "impostazioni"}
+  <Impostazioni onIndietro={vaiHome} />
 {:else if schermata === "connessione"}
   <Collegamento intento={partita.intento} codice={partita.ultimoCodice} onAnnulla={() => partita.annulla()} />
 {:else if schermata === "lobby" && v}
@@ -142,6 +147,7 @@
       onCrea={(nome) => void partita.crea(nome)}
       onUnisciti={unisciti}
       onRegole={() => (window.location.hash = "#/come-si-gioca")}
+      onImpostazioni={() => (window.location.hash = "#/impostazioni")}
       codiceIniziale={codiceDaLink || partita.ultimoCodice}
       nomeIniziale={nomeSalvato()}
       avviso={partita.avviso}

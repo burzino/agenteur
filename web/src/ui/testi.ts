@@ -43,6 +43,14 @@ export const t = {
   homePronto: "Tutto pronto: puoi entrare.",
   homeCreaAiuto: "Il tuo telefono guida la partita e ti dà un codice da condividere.",
   homeNomeAiuto: "Se non scrivi un nome, usiamo «Host» o «Giocatore».",
+  homeCreaTitolo: "Crea una partita",
+  homeUniscitiSezione: "Unisciti a una partita",
+  homeCampoCodiceBreve: "Codice della partita",
+  homeImpostazioni: "Impostazioni",
+  impostazioniTitolo: "Impostazioni",
+  impostazioniAspettoAiuto: "Scegli come appare l'app. «Sistema» segue il tuo telefono.",
+  postoGiaPreso: "Già preso da {nome}",
+  postoOccupatoDa: "Preso da {nome}",
 
   // Errori di avvio (persistenti, con nuovo tentativo)
   avvioErroreTitolo: "Non ce l'ho fatta",

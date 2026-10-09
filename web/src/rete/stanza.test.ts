@@ -121,6 +121,25 @@ describe("stanza", () => {
     expect(si.stanza.stato!.plancia[0].scoperta).toBe(true);
   });
 
+  it("CA-21 un secondo giocatore che chiede la stessa Spia e' rifiutato e lo stato resta invariato", () => {
+    const s = lobby();
+    const r = invia(s, "c2", { tipo: "scegli", squadra: "rosso", ruolo: "spia" });
+    expect(r.stanza).toBe(s);
+    expect(r.uscita).toHaveLength(1);
+    expect(trova(r.uscita, "c2")?.tipo).toBe("errore");
+    // chi ha gia' il posto lo mantiene senza errore
+    const stesso = invia(s, "c1", { tipo: "scegli", squadra: "rosso", ruolo: "spia" });
+    expect(trova(stesso.uscita, "c1")?.tipo).toBe("stato");
+    expect(stesso.stanza.giocatori).toEqual(s.giocatori);
+  });
+
+  it("CA-21 piu' Agenti sulla stessa squadra restano permessi", () => {
+    const s = lobby();
+    const r = invia(s, "c3", { tipo: "scegli", squadra: "blu", ruolo: "agente" });
+    expect(r.uscita.map((u) => u.messaggio.tipo)).toEqual(["stato", "stato", "stato", "stato"]);
+    expect(r.stanza.giocatori.filter((g) => g.squadra === "blu" && g.ruolo === "agente")).toHaveLength(2);
+  });
+
   it("CA-22 il token riconosciuto riprende il posto e ottiene una nuova stato", () => {
     let s = partita();
     const token = Object.keys(s.token).find((t) => s.token[t] === "g2")!;

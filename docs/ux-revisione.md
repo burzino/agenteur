@@ -37,6 +37,12 @@ Feedback: lobby e scelta dei ruoli poco fluide. Modificato solo `web/src/ui/` e 
 ## Generale
 - Nuovi `Spinner.svelte` e prop `inCorso` di `Pulsante`; con `prefers-reduced-motion` gli anelli restano fermi. Bersagli di tocco >= 48 px ovunque; testi bianchi su avatar-0/avatar-4 (>= 5,1:1), testi dei contenitori già verificati nel design. Tutti i testi in `testi.ts` (chiavi non vuote, CA-36).
 
+## Seconda ronda (dopo la prova)
+- Impostazioni: nuova schermata `Impostazioni.svelte` (rotta `#/impostazioni`) con il selettore Sistema / Chiaro / Scuro / Alto contrasto; la Home ha solo un pulsante "Impostazioni" in alto a destra. Il tema si applica e si salva come prima.
+- Home divisa in due schede: "Crea una partita" (campo "Il tuo nome" + "Crea partita") e "Unisciti a una partita" (codice + "Il tuo nome" + "Unisciti"). Ogni campo ha l'etichetta visibile. Il nome è condiviso fra le due schede e salvato in `agenteur.nome` (try/catch) a ogni modifica, così non si riscrive.
+- Scelta del posto: icona a occhio per la Spia, a persona per l'Agente (SVG inline), bordo e pieno nei colori `--colore-avatar-0` (Rossa) e `--colore-avatar-4` (Blu), etichetta testuale sempre presente. Il posto scelto è pieno con spunta.
+- Posti disabilitati: una Spia già occupata da un altro giocatore (diverso dal giocatore di cui si sceglie il posto) in quella squadra: `aria-disabled`, spento, riporta "Preso da <nome>"; il tocco non fa nulla e mostra "Già preso da <nome>". Gli Agenti restano sempre selezionabili. Il blocco è solo di interfaccia: la regola resta all'host (vedi sotto).
+
 ## Richiede rete (non fatto)
 - Rifiuto esplicito di `scegli` quando un posto di Spia è già preso: oggi l'host accetta tutto e blocca solo "Inizia".
 - Conferma esplicita della scelta di posto dal guest: oggi si deduce dalla vista successiva (con timeout di 5 s).

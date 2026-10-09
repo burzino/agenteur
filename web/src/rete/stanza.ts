@@ -101,10 +101,18 @@ export function nuovaPartita(stanza: Stanza): Risultato {
   return { stanza: s, uscita: statoATutti(s) };
 }
 
+const POSTO_SPIA_PRESO = "Quel posto da Spia e' gia' preso.";
+
+/** CA-21: una sola Spia per squadra. Vero se un altro giocatore occupa gia' quel posto. */
+function spiaOccupata(stanza: Stanza, idGiocatore: string, squadra: Squadra, ruolo: Ruolo): boolean {
+  return ruolo === "spia" && stanza.giocatori.some((g) => g.id !== idGiocatore && g.squadra === squadra && g.ruolo === "spia");
+}
+
 /** Azione dell'host in lobby: assegna squadra e ruolo a qualunque giocatore (anche a se stesso). */
 export function assegna(stanza: Stanza, idGiocatore: string, squadra: Squadra, ruolo: Ruolo): Risultato | { errore: string } {
   if (stanza.stato !== null) return { errore: "La partita e' gia' iniziata." };
   if (!stanza.giocatori.some((g) => g.id === idGiocatore)) return { errore: "Giocatore sconosciuto." };
+  if (spiaOccupata(stanza, idGiocatore, squadra, ruolo)) return { errore: POSTO_SPIA_PRESO };
   const giocatori = stanza.giocatori.map((g) => (g.id === idGiocatore ? { ...g, squadra, ruolo } : g));
   const s = { ...stanza, giocatori };
   return { stanza: s, uscita: statoATutti(s) };
@@ -177,6 +185,9 @@ export function gestisci(
   switch (m.tipo) {
     case "scegli": {
       if (stanza.stato !== null) return errore(stanza, idConnessione, "La partita e' gia' iniziata.");
+      if (spiaOccupata(stanza, mittente.id, m.squadra, m.ruolo)) {
+        return errore(stanza, idConnessione, POSTO_SPIA_PRESO);
+      }
       const giocatori = stanza.giocatori.map((g) =>
         g.id === mittente.id ? { ...g, squadra: m.squadra, ruolo: m.ruolo } : g,
       );
