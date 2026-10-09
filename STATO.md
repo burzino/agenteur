@@ -14,6 +14,7 @@
 4. [da fare] Collaudo su due telefoni (uno host, uno guest) e in Chrome con due finestre.
 6. [scritta, da verificare con build] Revisione UX/UI (docs/ux-revisione.md)
 7. [scritta, da verificare con build] Seconda ronda UX: Impostazioni, Home divisa, ruoli leggibili
+8. [scritta, da verificare con build] Regola ruoli per numero di giocatori (D10)
 5. [fatto] Deploy: repository pubblico `burzino/agenteur` (main), Pages con sorgente GitHub Actions, workflow verde. Sito: http://burzi.eu/agenteur/ (200). Carta "Agenteur" su burzi.eu (commit c99eb50 in burzino.github.io). Da fare: attivare "Enforce HTTPS" nelle impostazioni Pages (il certificato per burzi.eu è approvato, scade 2027-01-07).
 
 ## Punti aperti

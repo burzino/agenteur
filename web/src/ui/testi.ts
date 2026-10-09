@@ -101,7 +101,7 @@ export const t = {
   lobbyHostModo: "Il tuo ruolo nella partita",
   lobbyHostGioca: "Gioco anch'io",
   lobbyHostRegia: "Solo regia",
-  lobbyRegolaIniziare: "Servono 4–10 giocatori; ogni squadra ha una Spia e almeno un Agente.",
+  lobbyRegolaIniziare: "Servono 4–10 giocatori; ogni squadra ha una Spia e almeno 1 Agente (4–5 giocatori), 2 (6–7) o 3 (8–10).",
   lobbyNessunGiocatore: "Nessun giocatore ancora. Condividi il codice.",
   lobbyInvita: "Fai entrare gli altri con questo codice",
   lobbyCopiato: "Copiato",
@@ -120,7 +120,9 @@ export const t = {
   bloccoSenzaPosto: "Tutti devono scegliere un posto",
   bloccoServeSpia: "Serve una Spia per ogni squadra",
   bloccoUnaSolaSpia: "Ogni squadra può avere una sola Spia",
-  bloccoServeAgente: "Serve almeno un Agente per ogni squadra",
+  bloccoServeAgente: "Serve almeno 1 Agente per squadra con 4 o 5 giocatori",
+  bloccoServonoDueAgenti: "Servono almeno 2 Agenti per squadra con 6 o 7 giocatori",
+  bloccoServonoTreAgenti: "Servono almeno 3 Agenti per squadra con 8, 9 o 10 giocatori",
 
   // Come si gioca
   regoleTitolo: "Come si gioca",

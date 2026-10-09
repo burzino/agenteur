@@ -121,7 +121,14 @@ export function vistaPer(stato: Stato, giocatore: Giocatore): VistaCarta[] {
   }));
 }
 
-/** CA-13: 4-10 giocatori; per squadra una Spia e almeno un Agente. */
+/** D10: Agenti minimi per squadra: 1 con 4-5 giocatori, 2 con 6-7, 3 con 8-10. */
+export function agentiMinimi(totaleGiocatori: number): number {
+  if (totaleGiocatori >= 8) return 3;
+  if (totaleGiocatori >= 6) return 2;
+  return 1;
+}
+
+/** CA-13: 4-10 giocatori; per squadra una Spia e gli Agenti minimi per quel numero di giocatori (D10). */
 export function puoIniziare(giocatori: Giocatore[]): Esito {
   if (giocatori.length < 4 || giocatori.length > 10) {
     return { ok: false, motivo: "Servono da 4 a 10 giocatori." };
@@ -134,8 +141,12 @@ export function puoIniziare(giocatori: Giocatore[]): Esito {
     if (sq.filter((g) => g.ruolo === "spia").length !== 1) {
       return { ok: false, motivo: `La squadra ${squadra} deve avere una Spia.` };
     }
-    if (!sq.some((g) => g.ruolo === "agente")) {
-      return { ok: false, motivo: `La squadra ${squadra} deve avere almeno un Agente.` };
+    const minimo = agentiMinimi(giocatori.length);
+    if (sq.filter((g) => g.ruolo === "agente").length < minimo) {
+      return {
+        ok: false,
+        motivo: `La squadra ${squadra} deve avere almeno ${minimo} Agenti con ${giocatori.length} giocatori.`,
+      };
     }
   }
   return { ok: true };

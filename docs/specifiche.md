@@ -17,6 +17,7 @@ Ambito di questa versione: solo PWA (Svelte 5 + TypeScript + Vite + vite-plugin-
 | D7 | Chi scopre l'assassino perde la partita per la sua squadra. | Regola classica. |
 | D8 | Riconnessione: un guest che cade ritrova il suo posto con lo stesso token salvato sul telefono. Se l'host chiude, la partita finisce. | Telefoni che vanno in standby sono la norma. |
 | D9 | Sicurezza: la chiave della plancia (colori delle carte) va solo alle Spie. Un giocatore esperto può leggere il traffico con gli strumenti del browser: accettato, è un gioco fra amici, non un sistema di sicurezza. | Limite dichiarato, non nascosto. |
+| D10 | Regola ruoli per numero di giocatori: ogni squadra ha una Spia e almeno 1 Agente (4–5 giocatori), 2 (6–7) o 3 (8–10). Con 4, 6 e 8 giocatori coincide con 1+1, 1+2, 1+3. Sostituisce "almeno un Agente" di D5. | Regola ruoli per numero di giocatori, richiesta dall'utente. |
 
 ## 2. Regole di gioco
 
@@ -78,7 +79,13 @@ Ogni test cita il CA che verifica.
 - CA-10: una carta già scoperta non si può scoprire di nuovo.
 - CA-11: `vistaPer(giocatore)`: la Spia riceve i colori di tutte le carte; un Agente riceve i colori solo delle carte scoperte; nessuna vista contiene le carte nascoste di un altro tipo.
 - CA-12: la chiave di partita ha 6 caratteri dall'alfabeto ammesso; generata due volte non dà sempre lo stesso risultato.
-- CA-13: l'avvio della partita richiede 4–10 giocatori e, per ogni squadra, una Spia e almeno un Agente.
+- CA-13: l'avvio della partita richiede 4–10 giocatori e, per ogni squadra, esattamente una Spia e un numero minimo di Agenti che dipende dal totale (D10):
+
+  | Giocatori | Spie per squadra | Agenti per squadra (minimo) |
+  |---|---|---|
+  | 4 o 5 | 1 | 1 |
+  | 6 o 7 | 1 | 2 |
+  | 8, 9 o 10 | 1 | 3 |
 
 **Protocollo (`web/src/rete/`)**
 - CA-20: un messaggio con tipo sconosciuto o campi mancanti è scartato (la funzione restituisce errore, non lancia).

@@ -268,6 +268,37 @@ describe("puoIniziare", () => {
     expect(puoIniziare(dueSpie).ok).toBe(false);
   });
 
+  it("CA-13 con 4 giocatori rifiuta una squadra con 0 Agenti", () => {
+    const zeroAgenti = [
+      g("1", "rosso", "spia"),
+      g("2", "blu", "spia"),
+      g("3", "blu", "agente"),
+      g("4", "blu", "agente"),
+    ];
+    expect(puoIniziare(zeroAgenti).ok).toBe(false);
+  });
+
+  const squadre = (agentiPerSquadra: number, rosso = agentiPerSquadra, blu = agentiPerSquadra) => {
+    const l = [g("r0", "rosso", "spia"), g("b0", "blu", "spia")];
+    for (let i = 0; i < rosso; i++) l.push(g(`r${i + 1}`, "rosso", "agente"));
+    for (let i = 0; i < blu; i++) l.push(g(`b${i + 1}`, "blu", "agente"));
+    return l;
+  };
+
+  it("CA-13 con 6 giocatori servono 2 Agenti per squadra", () => {
+    expect(puoIniziare(squadre(1, 1, 3)).ok).toBe(false); // 6 giocatori, rosso con 1 Agente
+    expect(puoIniziare(squadre(2)).ok).toBe(true); // 6 giocatori, 2+2
+  });
+
+  it("CA-13 con 8 giocatori servono 3 Agenti per squadra", () => {
+    expect(puoIniziare(squadre(2, 4, 2)).ok).toBe(false); // 8 giocatori, blu con 2
+    expect(puoIniziare(squadre(3)).ok).toBe(true); // 8 giocatori, 3+3
+  });
+
+  it("CA-13 con 5 giocatori basta 1 Agente per squadra", () => {
+    expect(puoIniziare(squadre(1, 2, 1)).ok).toBe(true);
+  });
+
   it("CA-13 rifiuta giocatori senza squadra o ruolo", () => {
     expect(puoIniziare([...base.slice(0, 3), g("4", null, null)]).ok).toBe(false);
   });

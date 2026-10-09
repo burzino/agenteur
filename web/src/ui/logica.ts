@@ -1,6 +1,6 @@
 // Logica pura dell'interfaccia (testabile in Node, senza Svelte).
 import type { Colore, Giocatore, Ruolo, Squadra, VistaCarta } from "../gioco/modelli";
-import { puoIniziare } from "../gioco/regole";
+import { agentiMinimi, puoIniziare } from "../gioco/regole";
 import { riempi, t } from "./testi";
 
 export const LUNGHEZZA_CODICE = 6;
@@ -93,6 +93,9 @@ export function motivoBlocco(giocatori: Giocatore[]): string | null {
     if (spie === 0) return t.bloccoServeSpia;
     if (spie > 1) return t.bloccoUnaSolaSpia;
   }
+  const minimo = agentiMinimi(giocatori.length);
+  if (minimo === 3) return t.bloccoServonoTreAgenti;
+  if (minimo === 2) return t.bloccoServonoDueAgenti;
   return t.bloccoServeAgente;
 }
 
