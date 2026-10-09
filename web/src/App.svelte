@@ -4,6 +4,7 @@
   import Toast from "./ui/componenti/Toast.svelte";
   import { carteConColori, normalizzaCodice } from "./ui/logica";
   import { nomeSalvato, partita } from "./ui/partita.svelte";
+  import { mantieniSchermoAcceso } from "./ui/schermo";
   import Collegamento from "./ui/schermate/Collegamento.svelte";
   import ComeSiGioca from "./ui/schermate/ComeSiGioca.svelte";
   import Fine from "./ui/schermate/Fine.svelte";
@@ -56,6 +57,13 @@
     if (voluto !== null && window.location.hash !== voluto) window.location.hash = voluto;
     // Senza partita le rotte di gioco non hanno senso: si torna alla Home.
     if (schermata === "home" && hash !== "#/" && !hash.startsWith(PREFISSO_UNISCITI)) window.location.hash = "#/";
+  });
+
+  // Schermo acceso in Lobby, Indizio e Plancia: uno spento a meta' partita manda il guest in riprovo.
+  const tieniSchermo = $derived(schermata === "lobby" || schermata === "indizio" || schermata === "plancia");
+  $effect(() => {
+    if (!tieniSchermo) return;
+    return mantieniSchermoAcceso();
   });
 
   onMount(() => {
@@ -114,6 +122,7 @@
   <Indizio
     paroleDellaPlancia={v.carte.map((c) => c.parola)}
     carte={v.carte}
+    offline={partita.riprovo}
     erroreEsterno={partita.errore}
     onInvia={(i) => partita.indizio(i.parola, i.numero)}
     onHome={() => (confermaEsci = true)}
@@ -128,6 +137,7 @@
     squadraGiocatore={v.io.squadra}
     scopertiNelTurno={v.scopertiNelTurno}
     {puoAgire}
+    offline={partita.riprovo}
     onScopri={(i) => partita.scopri(i)}
     onTermina={() => partita.terminaTurno()}
     onHome={() => (confermaEsci = true)}

@@ -49,6 +49,9 @@
 
   // CA-30: sotto i 6 caratteri "Unisciti" resta disattivato; serve anche un nome.
   const puoUnirsi = $derived(codiceCompleto(codice) && nome.trim() !== "");
+  // U20: il nome serve in entrambe le schede; il messaggio compare dopo un tentativo a vuoto.
+  let nomeTentato = $state(false);
+  const erroreNome = $derived(nomeTentato && nome.trim() === "" ? t.homeNomeObbligatorio : undefined);
   const suggerimento = $derived(
     codice.length === 0
       ? t.homeCodiceAiuto
@@ -59,10 +62,10 @@
           : t.homePronto,
   );
 
-  // Scheda attiva: vale solo per la visita corrente; con un codice dal link si apre "Unisci".
-  const SCHEDE = [{ id: "crea" }, { id: "unisci" }] as const;
+  // Scheda attiva: vale solo per la visita corrente; "Unisci" e' la prima e la predefinita (anche con un codice dal link).
+  const SCHEDE = [{ id: "unisci" }, { id: "crea" }] as const;
   type IdScheda = (typeof SCHEDE)[number]["id"];
-  let scheda = $state<IdScheda>(untrack(() => (normalizzaCodice(codiceIniziale) !== "" ? "unisci" : "crea")));
+  let scheda = $state<IdScheda>("unisci");
 
   function tastoScheda(e: KeyboardEvent): void {
     if (e.key !== "ArrowLeft" && e.key !== "ArrowRight" && e.key !== "Home" && e.key !== "End") return;
@@ -74,9 +77,14 @@
     document.getElementById(`tab-${scheda}`)?.focus();
   }
 
-  function invia(e: SubmitEvent): void {
-    e.preventDefault();
+  function unisciti(): void {
+    nomeTentato = true;
     if (puoUnirsi) onUnisciti({ codice, nome: nome.trim() });
+  }
+
+  function crea(): void {
+    nomeTentato = true;
+    if (nome.trim() !== "") onCrea(nome.trim());
   }
 </script>
 
@@ -126,21 +134,36 @@
         onclick={() => (scheda = s.id)}
         onkeydown={tastoScheda}
       >
-        {s.id === "crea" ? t.homeSchedaCrea : t.homeSchedaUnisci}
+        <span class="tab-titolo">{s.id === "crea" ? t.homeSchedaCrea : t.homeSchedaUnisci}</span>
+        <span class="tab-sotto">{s.id === "crea" ? t.homeSottoCrea : t.homeSottoUnisci}</span>
       </button>
     {/each}
   </div>
 
   {#if scheda === "crea"}
     <div class="blocco pannello" role="tabpanel" id="pannello-crea" aria-labelledby="tab-crea" tabindex="-1">
-      <p class="nota">{t.homeCreaAiuto}</p>
-      <CampoTesto etichetta={t.homeCampoNome} valore={nome} onCambia={cambiaNome} maxLunghezza={20} />
-      <p class="nota">{t.homeNomeAiuto}</p>
-      <Pulsante onClick={() => onCrea(nome.trim())}>{t.homeCreaPartita}</Pulsante>
+      <form
+        class="blocco"
+        onsubmit={(e) => {
+          e.preventDefault();
+          crea();
+        }}
+      >
+        <p class="nota">{t.homeCreaAiuto}</p>
+        <CampoTesto
+          etichetta={t.homeCampoNome}
+          valore={nome}
+          onCambia={cambiaNome}
+          maxLunghezza={20}
+          errore={erroreNome}
+          invio="go"
+        />
+        <Pulsante onClick={crea}>{t.homeCreaPartita}</Pulsante>
+      </form>
     </div>
   {:else}
     <div class="pannello" role="tabpanel" id="pannello-unisci" aria-labelledby="tab-unisci" tabindex="-1">
-      <form class="blocco" onsubmit={invia}>
+      <form class="blocco" onsubmit={(e) => e.preventDefault()}>
         <CampoTesto
           etichetta={t.homeCampoCodiceBreve}
           valore={codice}
@@ -150,12 +173,17 @@
           segnaposto={t.homeSegnapostoCodice}
           tipoCodice
           invio="go"
+          onInvio={unisciti}
         />
-        <CampoTesto etichetta={t.homeCampoNome} valore={nome} onCambia={cambiaNome} maxLunghezza={20} invio="go" />
+        <CampoTesto etichetta={t.homeCampoNome} valore={nome}
+          onCambia={cambiaNome}
+          maxLunghezza={20}
+          errore={erroreNome}
+          invio="go"
+          onInvio={unisciti}
+        />
         <p class="nota" role="status">{suggerimento}</p>
-        <Pulsante variante="tonale" disabilitato={!puoUnirsi} onClick={() => onUnisciti({ codice, nome: nome.trim() })}
-          >{t.homeUnisciti}</Pulsante
-        >
+        <Pulsante variante="tonale" disabilitato={!codiceCompleto(codice)} onClick={unisciti}>{t.homeUnisciti}</Pulsante>
       </form>
     </div>
   {/if}
@@ -220,6 +248,13 @@
   }
   .tab[aria-selected="true"] {
     color: var(--colore-primario);
+  }
+  .tab-titolo,
+  .tab-sotto {
+    display: block;
+  }
+  .tab-sotto {
+    font: var(--testo-didascalia);
   }
   .tab::after {
     content: "";

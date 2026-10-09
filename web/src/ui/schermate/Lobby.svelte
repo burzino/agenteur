@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { untrack } from "svelte";
+  import { tick, untrack } from "svelte";
+  import { toString as qrSvg } from "qrcode";
   import type { Ruolo, Squadra } from "../../gioco/modelli";
   import type { VistaGiocatore } from "../../rete/contratto";
   import Pagina from "../componenti/Pagina.svelte";
@@ -58,6 +59,44 @@
     timerCopia = setTimeout(() => (copiato = null), 2000);
   }
 
+  // U22: "Condividi" dove esiste il Web Share; altrove resta "Copia link".
+  const puoCondividere = typeof navigator !== "undefined" && typeof navigator.share === "function";
+
+  async function condividi(): Promise<void> {
+    try {
+      await navigator.share({ title: t.lobbyCondividiTitolo, url: link });
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
+      await copia("link");
+    }
+  }
+
+  // D3: QR del link; sfondo bianco e moduli neri per il contrasto, qualunque sia il tema.
+  let qr = $state("");
+  $effect(() => {
+    const url = link;
+    let attivo = true;
+    qrSvg(url, { type: "svg", margin: 1, errorCorrectionLevel: "M" })
+      .then((svg) => {
+        if (attivo) qr = svg;
+      })
+      .catch(() => {
+        if (attivo) qr = "";
+      });
+    return () => {
+      attivo = false;
+    };
+  });
+
+  // U15: dopo il tocco su una riga l'host vede subito la griglia dei posti.
+  let sezionePosti = $state<HTMLElement | null>(null);
+  async function seleziona(id: string): Promise<void> {
+    selezionato = id;
+    await tick();
+    const ridotto = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    sezionePosti?.scrollIntoView({ behavior: ridotto ? "auto" : "smooth", block: "start" });
+  }
+
   const titoloPosto = $derived(
     bersaglio && bersaglio.id !== vista.io.id
       ? riempi(t.lobbyPostoDi, { nome: bersaglio.nome })
@@ -67,24 +106,11 @@
 
 <Pagina titolo={t.lobbyTitolo} onHome={onEsci}>
   <div class="contenuto">
-    <section class="codice-blocco" aria-labelledby="etichetta-codice">
-      <p class="etichetta" id="etichetta-codice">{t.lobbyInvita}</p>
-      <p class="codice" aria-label={vista.codice.split("").join(" ")}>{formattaCodice(vista.codice)}</p>
-      <div class="azioni">
-        <Pulsante variante="pieno" onClick={() => copia("codice")}>
-          {copiato === "codice" ? `✓ ${t.lobbyCopiato}` : t.lobbyCopiaCodice}
-        </Pulsante>
-        <Pulsante variante="tonale" onClick={() => copia("link")}>
-          {copiato === "link" ? `✓ ${t.lobbyCopiato}` : t.lobbyCopiaLink}
-        </Pulsante>
-      </div>
-      <p class="solo-lettori" role="status">{copiato !== null ? t.copiato : ""}</p>
-    </section>
-
     {#if bersaglioId !== null}
       {@const idB = bersaglioId}
-      <section class="blocco">
+      <section class="blocco" bind:this={sezionePosti}>
         <h2>{titoloPosto}</h2>
+        {#if eHost}<p class="nota">{t.lobbyHostGuida}</p>{/if}
         <SceltaPosto
           giocatori={vista.giocatori}
           bersaglioId={idB}
@@ -97,9 +123,31 @@
       <p class="nota">{t.lobbyScegliGiocatore}</p>
     {/if}
 
+    <section class="codice-blocco" aria-labelledby="etichetta-codice">
+      <p class="etichetta" id="etichetta-codice">{t.lobbyInvita}</p>
+      <div class="riga-codice">
+        <p class="codice" aria-label={vista.codice.split("").join(" ")}>{formattaCodice(vista.codice)}</p>
+        <div class="azioni">
+          <Pulsante variante="pieno" onClick={() => copia("codice")}>
+            {copiato === "codice" ? `✓ ${t.lobbyCopiato}` : t.lobbyCopiaCodice}
+          </Pulsante>
+          {#if puoCondividere}
+            <Pulsante variante="tonale" onClick={condividi}>{t.lobbyCondividi}</Pulsante>
+          {:else}
+            <Pulsante variante="tonale" onClick={() => copia("link")}>
+              {copiato === "link" ? `✓ ${t.lobbyCopiato}` : t.lobbyCopiaLink}
+            </Pulsante>
+          {/if}
+        </div>
+      </div>
+      <p class="solo-lettori" role="status">{copiato !== null ? t.copiato : ""}</p>
+      {#if qr}
+        <div class="qr" role="img" aria-label={t.lobbyQrEtichetta}>{@html qr}</div>
+      {/if}
+    </section>
+
     <section class="blocco">
       <h2>{riempi(t.lobbyGiocatori, { n: vista.giocatori.length })}</h2>
-      {#if eHost}<p class="nota">{t.lobbyHostGuida}</p>{/if}
       {#if vista.giocatori.length === 0}
         <p class="nota">{t.lobbyNessunGiocatore}</p>
       {/if}
@@ -123,8 +171,8 @@
                 class="giocatore toccabile"
                 class:in-mano={inMano}
                 aria-pressed={inMano}
-                aria-label={riempi(t.lobbyCambiaPostoDi, { nome: g.nome })}
-                onclick={() => (selezionato = g.id)}
+                aria-label={riempi(t.lobbyCambiaPostoDiOra, { nome: g.nome, posto: descriviPosto(g.squadra, g.ruolo) })}
+                onclick={() => seleziona(g.id)}
               >
                 {@render riga()}
               </button>
@@ -185,19 +233,43 @@
   .etichetta {
     font: var(--testo-etichetta);
   }
+  .riga-codice {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spazio-2) var(--spazio-3);
+  }
   .codice {
-    font: var(--testo-display);
+    font: var(--testo-titolo-sezione);
+    font-size: 1.75rem;
     letter-spacing: 0.08em;
     overflow-wrap: anywhere;
   }
   .azioni {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    flex: 1 1 auto;
+    justify-content: center;
     gap: var(--spazio-2);
   }
   .azioni :global(.pulsante) {
-    padding-left: var(--spazio-2);
-    padding-right: var(--spazio-2);
+    width: auto;
+    flex: 1 1 0;
+    min-height: 48px;
+    padding-left: var(--spazio-3);
+    padding-right: var(--spazio-3);
+  }
+  .qr {
+    align-self: center;
+    width: min(60vw, 200px);
+    padding: var(--spazio-2);
+    border-radius: var(--raggio-m);
+    background: #fff;
+    line-height: 0;
+  }
+  .qr :global(svg) {
+    width: 100%;
+    height: auto;
   }
   .blocco {
     display: flex;

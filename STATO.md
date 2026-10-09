@@ -17,6 +17,8 @@
 8. [scritta, da verificare con build] Regola ruoli per numero di giocatori (D10)
 9. [scritta, da verificare con build] Home a due schede Crea e Unisci
 10. [fatto] Logo Agenteur (icone PWA e SVG)
+11. [scritta, da verificare con build] Correzioni UX plancia e indizio (U4-U10, U16-U19), Wake Lock
+12. [scritta, da verificare con build] Correzioni UX Home, Lobby, QR, vibrazione in Impostazioni
 5. [fatto] Deploy: repository pubblico `burzino/agenteur` (main), Pages con sorgente GitHub Actions, workflow verde. Sito: https://burzi.eu/agenteur/ (200, HTTPS attivo; "Enforce HTTPS" attivato dall'utente). Carta "Agenteur" su burzi.eu (commit c99eb50 in burzino.github.io). Certificato burzi.eu valido fino al 2027-01-07.
 
 ## Punti aperti

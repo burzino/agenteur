@@ -81,6 +81,15 @@
           </svg>
         {/if}
         {nomeSquadra(p.squadra)} · {nomeRuolo(p.ruolo)}
+        {#if preso}
+          <!-- lucchetto -->
+          <svg viewBox="0 0 24 24" width="18" height="18" role="img" aria-label={t.postoBloccatoIcona} focusable="false">
+            <path
+              fill="currentColor"
+              d="M18 8h-1V6a5 5 0 0 0-10 0v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2M9 6a3 3 0 0 1 6 0v2H9zm3 11a2 2 0 1 1 0-4 2 2 0 0 1 0 4"
+            />
+          </svg>
+        {/if}
         {#if mio}
           <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
             <path fill="currentColor" d="m9.55 17.65-4.4-4.4 1.4-1.4 3 3 7.9-7.9 1.4 1.4z" />
@@ -160,7 +169,8 @@
   }
   /* Spia gia' occupata: spento e non selezionabile, ma il nome di chi la occupa resta leggibile. */
   .posto.preso {
-    opacity: 0.6;
+    background: var(--colore-superficie-variante);
+    color: var(--colore-su-superficie-variante);
     border-style: dotted;
     cursor: not-allowed;
   }

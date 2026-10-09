@@ -26,12 +26,46 @@
     salvaTema(nuovo);
     applicaTema(nuovo);
   }
+
+  // D4: vibrazione al proprio turno, chiave `agenteur.vibrazione` ("1" / "0"); se manca o lo storage non c'e', e' attiva.
+  const CHIAVE_VIBRAZIONE = "agenteur.vibrazione";
+  function leggiVibrazione(): boolean {
+    try {
+      return localStorage.getItem(CHIAVE_VIBRAZIONE) !== "0";
+    } catch {
+      return true;
+    }
+  }
+  let vibra = $state(leggiVibrazione());
+  const opzioniVibra = [
+    { valore: "si", etichetta: t.impostazioniVibraAttiva },
+    { valore: "no", etichetta: t.impostazioniVibraSpenta },
+  ];
+
+  function cambiaVibra(v: string): void {
+    vibra = v === "si";
+    try {
+      localStorage.setItem(CHIAVE_VIBRAZIONE, vibra ? "1" : "0");
+    } catch {
+      /* storage non disponibile: vale solo per questa sessione */
+    }
+  }
 </script>
 
 <Pagina titolo={t.impostazioniTitolo} {onIndietro}>
   <section class="blocco">
     <Selettore etichetta={t.homeTemaEtichetta} opzioni={opzioniTema} valore={tema} onCambia={cambiaTema} colonne={2} />
     <p class="nota">{t.impostazioniAspettoAiuto}</p>
+  </section>
+  <section class="blocco">
+    <Selettore
+      etichetta={t.impostazioniVibra}
+      opzioni={opzioniVibra}
+      valore={vibra ? "si" : "no"}
+      onCambia={cambiaVibra}
+      colonne={2}
+    />
+    <p class="nota">{t.impostazioniVibraAiuto}</p>
   </section>
 </Pagina>
 

@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { CartaGriglia } from "../logica";
-  import { t } from "../testi";
+  import { riempi, t } from "../testi";
 
   interface Props {
     carte: CartaGriglia[];
@@ -8,8 +8,60 @@
     onTocca?: (indice: number) => void;
     /** Carta scelta in attesa di conferma (evidenziata). */
     selezionata?: number | null;
+    /**
+     * Vista Spia con velo: i colori delle carte coperte restano nascosti e compare il pulsante
+     * "Tieni premuto per vedere"; il velo torna su quando il dito si alza.
+     */
+    velabile?: boolean;
   }
-  let { carte, onTocca, selezionata = null }: Props = $props();
+  let { carte, onTocca, selezionata = null, velabile = false }: Props = $props();
+
+  /** True solo mentre il pulsante e' tenuto premuto. */
+  let premuto = $state(false);
+  const velo = $derived(velabile && !premuto);
+
+  const mostrate = $derived(
+    velo
+      ? carte.map((c) =>
+          c.scoperta
+            ? c
+            : { ...c, stile: null, suggerito: false, etichettaAria: riempi(t.planciaCartaNascosta, { parola: c.parola }) },
+        )
+      : carte,
+  );
+
+  // Il velo torna su anche se la pagina passa in background o se la griglia non e' piu' velabile.
+  $effect(() => {
+    if (!velabile) premuto = false;
+  });
+  $effect(() => {
+    const alCambio = (): void => {
+      if (document.visibilityState === "hidden") premuto = false;
+    };
+    document.addEventListener("visibilitychange", alCambio);
+    return () => document.removeEventListener("visibilitychange", alCambio);
+  });
+
+  function giu(e: PointerEvent): void {
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {
+      // ignorato
+    }
+    premuto = true;
+  }
+  function su(): void {
+    premuto = false;
+  }
+  function tastoGiu(e: KeyboardEvent): void {
+    if (e.key === " " || e.key === "Enter") {
+      e.preventDefault();
+      premuto = true;
+    }
+  }
+  function tastoSu(e: KeyboardEvent): void {
+    if (e.key === " " || e.key === "Enter") premuto = false;
+  }
 
   // Icone (forme, non solo colore): rosso triangolo, blu quadrato, neutrale trattino, assassino croce.
   const ICONE: Record<string, string> = {
@@ -21,7 +73,7 @@
 </script>
 
 <div class="griglia" role="group" aria-label={t.planciaTitolo}>
-  {#each carte as c (c.indice)}
+  {#each mostrate as c (c.indice)}
     {@const attiva = !!onTocca && !c.scoperta}
     <button
       type="button"
@@ -36,7 +88,7 @@
       onclick={() => onTocca?.(c.indice)}
     >
       {#if c.stile}
-        <svg class="icona" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <svg class="icona {c.stile}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
           <path fill="currentColor" d={ICONE[c.stile]} />
         </svg>
       {/if}
@@ -45,13 +97,34 @@
   {/each}
 </div>
 
+{#if velabile}
+  <button
+    type="button"
+    class="velo"
+    class:premuto
+    aria-pressed={premuto}
+    onpointerdown={giu}
+    onpointerup={su}
+    onpointercancel={su}
+    onlostpointercapture={su}
+    onkeydown={tastoGiu}
+    onkeyup={tastoSu}
+    onblur={su}
+    oncontextmenu={(e) => e.preventDefault()}
+  >
+    {t.planciaVelo}
+  </button>
+{/if}
+
 <style>
   .griglia {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     grid-template-rows: repeat(5, minmax(0, 1fr));
-    gap: var(--spazio-1);
-    width: 100%;
+    gap: 3px;
+    /* Bordo largo: la griglia sporge fino a 8 px dal bordo dello schermo. */
+    margin-inline: calc(var(--spazio-2) - var(--margine-schermata));
+    width: calc(100% + 2 * (var(--margine-schermata) - var(--spazio-2)));
     aspect-ratio: 1;
   }
   .carta {
@@ -98,16 +171,22 @@
   .parola {
     max-width: 100%;
     font: var(--testo-didascalia);
-    font-size: clamp(0.6rem, 3.1vw, 0.85rem);
+    font-size: clamp(0.7rem, 3.1vw, 0.85rem);
+    font-weight: 600;
     line-height: 1.1;
     text-align: center;
-    overflow-wrap: anywhere;
+    /* Va a capo sulle sillabe (lang="it"); break-word solo come rete di sicurezza per le parole piu' lunghe. */
+    overflow-wrap: break-word;
     hyphens: auto;
   }
   .icona {
     flex: none;
     width: 14px;
     height: 14px;
+  }
+  .icona.neutrale {
+    width: 18px;
+    height: 18px;
   }
 
   /* Spia, carta coperta: tinta leggera + icona */
@@ -121,13 +200,14 @@
   }
   .suggerito.neutrale {
     background: var(--colore-superficie-variante);
+    border-style: dashed;
   }
   .suggerito.assassino {
     border-color: var(--colore-su-superficie);
     border-width: 2px;
   }
 
-  /* Carta scoperta: colore pieno */
+  /* Carta scoperta: colore pieno, icona e parola barrata (niente trasparenza) */
   .scoperta.rosso {
     background: var(--colore-avatar-0);
     border-color: var(--colore-avatar-0);
@@ -140,6 +220,7 @@
   }
   .scoperta.neutrale {
     background: var(--colore-superficie-variante);
+    border-style: dashed;
     color: var(--colore-su-superficie-variante);
   }
   .scoperta.assassino {
@@ -148,6 +229,30 @@
     color: var(--colore-superficie);
   }
   .scoperta .parola {
-    opacity: 0.85;
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+  }
+
+  /* Pulsante "Tieni premuto per vedere": il gesto e' lo stesso di Imposteur. */
+  .velo {
+    display: block;
+    width: 100%;
+    min-height: var(--altezza-tocco);
+    margin-top: var(--spazio-3);
+    padding: var(--spazio-2) var(--spazio-4);
+    border: 2px solid var(--colore-primario);
+    border-radius: var(--raggio-pieno);
+    background: transparent;
+    color: var(--colore-primario);
+    font: var(--testo-titolo);
+    cursor: pointer;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+  .velo.premuto {
+    background: var(--colore-primario);
+    color: var(--colore-su-primario);
   }
 </style>

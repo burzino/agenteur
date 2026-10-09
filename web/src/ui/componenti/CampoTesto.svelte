@@ -16,6 +16,8 @@
     formatta?: (v: string) => string;
     /** Tasto di invio della tastiera (es. "go"). */
     invio?: "go" | "next" | "done";
+    /** Chiamata quando si preme Invio nel campo (solo campo a riga singola). */
+    onInvio?: () => void;
   }
   let {
     valore,
@@ -30,6 +32,7 @@
     trasforma,
     formatta,
     invio,
+    onInvio,
   }: Props = $props();
 
   const id = $props.id();
@@ -50,6 +53,13 @@
     // Riscrive il nodo: se il valore salvato non cambia (es. settimo carattere) Svelte non lo aggiornerebbe.
     e.currentTarget.value = formatta ? formatta(pulito) : pulito;
     onCambia(pulito);
+  }
+
+  function alTasto(e: KeyboardEvent): void {
+    if (e.key === "Enter" && onInvio) {
+      e.preventDefault();
+      onInvio();
+    }
   }
 </script>
 
@@ -80,6 +90,7 @@
       aria-invalid={errore ? "true" : undefined}
       aria-describedby={errore ? `${id}-e` : undefined}
       oninput={alDigitare}
+      onkeydown={alTasto}
     />
   {/if}
   {#if errore}
