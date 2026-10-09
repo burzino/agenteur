@@ -1,0 +1,153 @@
+// Tutti i testi dell'interfaccia (italiano). Chiavi camelCase; ogni valore e' una stringa non vuota (CA-36).
+// I segnaposto {nome} si sostituiscono con `riempi`.
+
+export const t = {
+  // Comuni
+  indietro: "Indietro",
+  tornaHome: "Torna alla home",
+  si: "Sì",
+  no: "No",
+  squadraRossa: "Rossa",
+  squadraBlu: "Blu",
+  ruoloSpia: "Spia",
+  ruoloAgente: "Agente",
+  esci: "Esci",
+  annulla: "Annulla",
+  copiato: "Copiato negli appunti.",
+  copiaNonRiuscita: "Non sono riuscito a copiare.",
+  nomePredefinitoHost: "Host",
+  nomePredefinitoGiocatore: "Giocatore",
+  nonConnesso: "non connesso",
+  senzaPosto: "Senza posto",
+  squadraRuolo: "{squadra} · {ruolo}",
+
+  // Home
+  homeTitolo: "Agenteur",
+  homeSottotitolo: "Il gioco di parole e indizi, ognuno sul proprio telefono.",
+  homeCreaPartita: "Crea partita",
+  homeUniscitiTitolo: "Unisciti a una partita",
+  homeCampoCodice: "Codice della partita (6 caratteri)",
+  homeCampoNome: "Il tuo nome",
+  homeUnisciti: "Unisciti",
+  homeComeSiGioca: "Come si gioca",
+  homeTemaEtichetta: "Aspetto",
+  temaSistema: "Sistema",
+  temaChiaro: "Chiaro",
+  temaScuro: "Scuro",
+  temaAltoContrasto: "Alto contrasto",
+
+  // Collegamento e avvisi
+  connessioneTitolo: "Collegamento",
+  connessioneInCorso: "Mi collego alla partita…",
+  connessioneRiprovo: "Collegamento perso. Riprovo…",
+  erroreBroker: "Non riesco a collegarmi al servizio di incontro dei telefoni. Controlla la rete e riprova.",
+  erroreStanzaNonTrovata: "Partita non trovata. Controlla il codice.",
+  erroreCodiceOccupato: "Non sono riuscito a creare la partita. Riprova.",
+  avvisoHostChiuso: "L'host ha chiuso la partita.",
+  avvisoHostIrraggiungibile: "L'host non è più raggiungibile: la partita è finita.",
+  avvisoHostRicaricato: "La pagina è stata ricaricata: la partita che ospitavi è finita.",
+  avvisoRifiutato: "L'host ha rifiutato il collegamento: {motivo}",
+  esciTitolo: "Lasciare la partita?",
+  esciMessaggioGuest: "Potrai rientrare solo con il codice.",
+  esciMessaggioHost: "Sei l'host: la partita finisce per tutti i giocatori.",
+  esciConferma: "Lascia",
+
+  // Lobby
+  lobbyTitolo: "Lobby",
+  lobbyCodice: "Codice della partita",
+  lobbyCopiaCodice: "Copia codice",
+  lobbyCopiaLink: "Copia link",
+  lobbyLinkEtichetta: "Link per entrare",
+  lobbyGiocatori: "Giocatori ({n})",
+  lobbyIo: "tu",
+  lobbyHostEtichetta: "host",
+  lobbyIniziaPartita: "Inizia",
+  lobbyAttesaHost: "In attesa che l'host inizi la partita.",
+  lobbyRuoloTuo: "Il tuo posto: {posto}",
+  lobbyScegliTuo: "Scegli il tuo posto",
+  lobbyScegliDi: "Posto di {nome}",
+  lobbyPostoRossoSpia: "Rossa · Spia",
+  lobbyPostoRossoAgente: "Rossa · Agente",
+  lobbyPostoBluSpia: "Blu · Spia",
+  lobbyPostoBluAgente: "Blu · Agente",
+  lobbyHostModo: "Il tuo ruolo nella partita",
+  lobbyHostGioca: "Gioco anch'io",
+  lobbyHostRegia: "Solo regia",
+  lobbyRegolaIniziare: "Servono 4–10 giocatori; ogni squadra ha una Spia e almeno un Agente.",
+  lobbyNessunGiocatore: "Nessun giocatore ancora. Condividi il codice.",
+
+  // Come si gioca
+  regoleTitolo: "Come si gioca",
+  regoleObiettivoTitolo: "Obiettivo",
+  regoleObiettivo:
+    "Due squadre, rossa e blu, si sfidano su una plancia di 25 parole. Vince la squadra che scopre per prima tutte le sue carte.",
+  regolePlanciaTitolo: "La plancia",
+  regolePlancia:
+    "Le carte sono 9 della squadra che inizia, 8 dell'altra, 7 neutrali e 1 assassino. Comincia la squadra con 9 carte.",
+  regoleRuoliTitolo: "I ruoli",
+  regoleRuoli:
+    "Ogni squadra ha una Spia, che vede il colore di tutte le carte, e uno o più Agenti, che vedono solo le carte già scoperte.",
+  regoleTurnoTitolo: "Il turno",
+  regoleTurno:
+    "La Spia della squadra di turno dà un indizio: una sola parola e un numero da 0 a 9. Poi gli Agenti della stessa squadra scoprono le carte.",
+  regoleIndizioTitolo: "L'indizio",
+  regoleIndizio:
+    "Una sola parola, senza spazi, di al massimo 24 caratteri, diversa da ogni parola della plancia (senza contare maiuscole e accenti).",
+  regoleScopertaTitolo: "Scoprire le carte",
+  regoleScoperta:
+    "Una carta della propria squadra: si può continuare. Una carta avversaria o neutrale: il turno finisce. L'assassino: la partita finisce e perde la squadra che l'ha scoperto.",
+  regoleFineTurnoTitolo: "Fine del turno",
+  regoleFineTurno:
+    "Gli Agenti possono terminare il turno dopo aver scoperto almeno una carta. Il turno finisce da solo alla scoperta sbagliata o dopo N+1 carte, dove N è il numero dell'indizio.",
+  regoleVittoriaTitolo: "Vittoria",
+  regoleVittoria:
+    "Vince la squadra che scopre tutte le sue carte, oppure quella il cui avversario scopre l'assassino.",
+
+  // Plancia
+  planciaTitolo: "Plancia",
+  planciaTurno: "Turno: squadra {squadra}",
+  planciaIndizio: "Indizio",
+  planciaNessunIndizio: "In attesa dell'indizio della Spia",
+  planciaIndizioNumero: "{parola} {numero}",
+  planciaRimasteRosse: "Rosse rimaste",
+  planciaRimasteBlu: "Blu rimaste",
+  planciaSeiSpia: "Sei la Spia della squadra {squadra}",
+  planciaSeiAgente: "Sei un Agente della squadra {squadra}",
+  planciaTerminaTurno: "Termina turno",
+  planciaCartaScoperta: "{parola}, scoperta, {colore}",
+  planciaCartaNascosta: "{parola}",
+  planciaCartaSpia: "{parola}, {colore}",
+  coloreRosso: "rosso",
+  coloreBlu: "blu",
+  coloreNeutrale: "neutrale",
+  coloreAssassino: "assassino",
+
+  // Dialogo di conferma scopri
+  scopriTitolo: "Scoprire «{parola}»?",
+  scopriMessaggio: "La carta verrà scoperta per tutti i giocatori.",
+  scopriConferma: "Scopri",
+  scopriAnnulla: "Annulla",
+
+  // Indizio
+  indizioTitolo: "Dai un indizio",
+  indizioCampoParola: "Parola",
+  indizioCampoNumero: "Numero di carte",
+  indizioSpiegaZero:
+    "Con 0 non indichi nessun numero: gli Agenti possono scoprire quante carte vogliono, fino a una carta sbagliata.",
+  indizioSpiegaNumero: "Gli Agenti possono scoprire fino a {max} carte in questo turno.",
+  indizioInvia: "Invia indizio",
+
+  // Fine partita
+  fineTitolo: "Fine partita",
+  fineVincono: "Vince la squadra {squadra}",
+  fineMotivoCompletata: "Ha scoperto tutte le sue carte.",
+  fineMotivoAssassino: "L'altra squadra ha scoperto l'assassino.",
+  fineColori: "Ecco i colori di tutte le carte.",
+  fineNuovaPartita: "Nuova partita",
+  fineAttendeHost: "Aspetta che l'host avvii una nuova partita.",
+} as const;
+
+/** Sostituisce i segnaposto {nome} con i valori dati. */
+export function riempi(testo: string, valori: Record<string, string | number>): string {
+  return testo.replace(/\{(\w+)\}/g, (m, k: string) => (k in valori ? String(valori[k]) : m));
+}
